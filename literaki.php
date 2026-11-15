@@ -50,6 +50,33 @@ function getBoardBonuses() {
     return $b;
 }
 
+function finalizeGameState(&$state) {
+    if (($state['status'] ?? '') === 'finished') {
+        return;
+    }
+
+    $state['status'] = 'finished';
+    $unusedSummary = [];
+
+    foreach ($state['players'] as &$player) {
+        $unusedTotal = 0;
+        foreach ($player['rack'] as $tile) {
+            $unusedTotal += (int)($tile['p'] ?? 0);
+        }
+
+        $player['score'] -= $unusedTotal;
+        if ($unusedTotal > 0) {
+            $unusedSummary[] = $player['nick'] . ' (-' . $unusedTotal . ' pkt)';
+        }
+        $player['rack'] = [];
+    }
+    unset($player);
+
+    if (!empty($unusedSummary)) {
+        $state['log'][] = 'Niewykorzystane litery: ' . implode(', ', $unusedSummary) . '.';
+    }
+}
+
 // ============================================================================
 // OBSŁUGA API (AJAX)
 // ============================================================================
@@ -183,8 +210,8 @@ if (isset($_GET['api'])) {
         $state['passes']++;
         $state['log'][] = $currentPlayer['nick'] . " spasował.";
         if ($state['passes'] >= count($state['players']) * 2) {
-            $state['status'] = 'finished';
             $state['log'][] = "Koniec gry (wszyscy spasowali dwukrotnie).";
+            finalizeGameState($state);
         } else {
             $state['turn'] = ($state['turn'] + 1) % count($state['players']);
         }
@@ -415,8 +442,8 @@ if (isset($_GET['api'])) {
 
         // Koniec gry gdy worek pusty i gracz pozbył się płytek
         if (count($state['pool']) === 0 && count($rack) === 0) {
-            $state['status'] = 'finished';
             $state['log'][] = "Koniec gry! {$currentPlayer['nick']} wyłożył wszystkie litery.";
+            finalizeGameState($state);
         } else {
             $state['turn'] = ($state['turn'] + 1) % count($state['players']);
         }
@@ -572,7 +599,7 @@ $bonusesJson = json_encode(getBoardBonuses());
 
 <br><br>
 
-Sram na wiadomo kogo
+Mordamorda
 
 <script>
 const BONUSES = <?= $bonusesJson ?>;
