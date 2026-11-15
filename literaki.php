@@ -191,7 +191,7 @@ if (isset($_GET['api'])) {
             'poolCount' => count($state['pool']),
             'board' => $state['board'],
             'players' => $publicPlayers,
-            'log' => array_slice($state['log'], -8),
+            'log' => $state['log'],
             'version' => $state['version']
         ], JSON_UNESCAPED_UNICODE);
         exit;
