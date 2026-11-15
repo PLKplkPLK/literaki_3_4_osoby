@@ -464,7 +464,7 @@ $bonusesJson = json_encode(getBoardBonuses());
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Literaki Online (3-4 osoby)</title>
+<title>Literaki</title>
 <style>
     :root {
         --bg: #1e242b; --panel: #28303a; --text: #f0f4f8;
@@ -531,8 +531,6 @@ $bonusesJson = json_encode(getBoardBonuses());
 </head>
 <body>
 
-<h1>🇵🇱 LITERAKI ONLINE</h1>
-
 <!-- LOBBY -->
 <div id="lobby" class="card">
     <div id="create-section">
@@ -597,9 +595,9 @@ $bonusesJson = json_encode(getBoardBonuses());
     </div>
 </div>
 
-<br><br>
-
+<div style="margin-top:20px;">
 Mordamorda
+</div>
 
 <script>
 const BONUSES = <?= $bonusesJson ?>;
