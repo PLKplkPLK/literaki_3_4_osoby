@@ -563,8 +563,10 @@ $bonusesJson = json_encode(getBoardBonuses());
                 <button id="btn-play" onclick="submitPlay()">✔ Zatwierdź</button>
                 <button id="btn-clear" class="sec" onclick="recallTiles()">↩ Cofnij</button>
                 <button id="btn-swap" class="warn" onclick="swapTiles()">⇄ Wymień</button>
+                <button id="btn-arrange" class="sec" onclick="toggleRackArrange()">↔ Ułóż litery</button>
                 <button id="btn-pass" class="sec" onclick="passTurn()">⏭ Pas</button>
             </div>
+            <div id="rack-arrange-hint" style="display:none; font-size:0.85rem; color:#bdc3c7;">Wybierz dwie płytki, aby zamienić je miejscami.</div>
         </div>
     </div>
 
@@ -606,6 +608,9 @@ let state = null;
 let lastVersion = -1;
 let selectedRackIdx = null;
 let tentativeMoves = []; // [{r, c, rackIdx, char, points}]
+let rackOrder = [];
+let rackArrangeMode = false;
+let selectedRackToSwap = null;
 
 // Inicjalizacja
 if (URL_ROOM) {
@@ -682,6 +687,9 @@ async function fetchState() {
     state = res;
     tentativeMoves = [];
     selectedRackIdx = null;
+    rackOrder = state.myRack.map((_, idx) => idx);
+    rackArrangeMode = false;
+    selectedRackToSwap = null;
     renderAll();
 }
 
@@ -721,6 +729,8 @@ function renderAll() {
     document.getElementById('btn-play').disabled = !isMyTurn;
     document.getElementById('btn-swap').disabled = !isMyTurn;
     document.getElementById('btn-pass').disabled = !isMyTurn;
+    document.getElementById('btn-arrange').innerText = rackArrangeMode ? '✓ Gotowe' : '↔ Ułóż litery';
+    document.getElementById('rack-arrange-hint').style.display = rackArrangeMode ? 'block' : 'none';
 
     renderBoard();
     renderRack();
@@ -751,19 +761,43 @@ function renderRack() {
     rackEl.innerHTML = '';
     if (!state.myRack) return;
 
-    state.myRack.forEach((tile, idx) => {
+    rackOrder.forEach(idx => {
+        const tile = state.myRack[idx];
         const isPlaced = tentativeMoves.some(m => m.rackIdx === idx);
         if (isPlaced) return;
 
         const div = document.createElement('div');
-        div.className = 'tile' + (selectedRackIdx === idx ? ' selected' : '');
+        div.className = 'tile' + (selectedRackIdx === idx || selectedRackToSwap === idx ? ' selected' : '');
         div.innerHTML = `${tile.l === '_' ? '?' : tile.l}<span class="pts">${tile.p}</span>`;
         div.onclick = () => {
+            if (rackArrangeMode) {
+                if (selectedRackToSwap === null) {
+                    selectedRackToSwap = idx;
+                } else if (selectedRackToSwap === idx) {
+                    selectedRackToSwap = null;
+                } else {
+                    const firstPosition = rackOrder.indexOf(selectedRackToSwap);
+                    const secondPosition = rackOrder.indexOf(idx);
+                    [rackOrder[firstPosition], rackOrder[secondPosition]] = [rackOrder[secondPosition], rackOrder[firstPosition]];
+                    selectedRackToSwap = null;
+                }
+                renderRack();
+                return;
+            }
             selectedRackIdx = (selectedRackIdx === idx) ? null : idx;
             renderRack();
         };
         rackEl.appendChild(div);
     });
+}
+
+function toggleRackArrange() {
+    rackArrangeMode = !rackArrangeMode;
+    selectedRackToSwap = null;
+    selectedRackIdx = null;
+    document.getElementById('btn-arrange').innerText = rackArrangeMode ? '✓ Gotowe' : '↔ Ułóż litery';
+    document.getElementById('rack-arrange-hint').style.display = rackArrangeMode ? 'block' : 'none';
+    renderRack();
 }
 
 function onCellClick(r, c) {
